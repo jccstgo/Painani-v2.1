@@ -176,6 +176,7 @@
       state.hideAnswers = hide;
       if (els.hideToggle) els.hideToggle.checked = hide;
       renderHideAnswersStatus(hide);
+      applyAnswerButtonsState();
     });
 
     socket.on('scores_update', (data) => {
@@ -301,9 +302,11 @@
     if (els.hideToggle) {
       els.hideToggle.addEventListener('change', () => {
         const hide = !!els.hideToggle.checked;
+        state.hideAnswers = hide;
         const s = getSocket();
         s.emit('toggle_hide_answers', { hide });
         renderHideAnswersStatus(hide);
+        applyAnswerButtonsState();
       });
     }
 
@@ -641,7 +644,7 @@
     // Habilitar/deshabilitar controles de pregunta
     const enabled = !!state.hasQuestion;
     [els.btnCorrect, els.btnIncorrect, els.btnCancel].forEach(b => { if (b) b.disabled = !enabled; });
-    document.querySelectorAll('[data-answer]')?.forEach(btn => { btn.disabled = !enabled; });
+    applyAnswerButtonsState();
   }
 
   function renderCorrectInfo(q) {
@@ -722,6 +725,12 @@
   function renderHideAnswersStatus(hide) {
     if (!els.hideStatus) return;
     els.hideStatus.textContent = hide ? 'Activado' : 'Desactivado';
+    applyAnswerButtonsState();
+  }
+
+  function applyAnswerButtonsState() {
+    const enabled = !!state.hasQuestion && !state.hideAnswers;
+    document.querySelectorAll('[data-answer]')?.forEach(btn => { btn.disabled = !enabled; });
   }
 
   function setLoadStatus(text, variant) {
