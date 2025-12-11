@@ -412,9 +412,9 @@
           cell.disabled = true;
           cell.style.opacity = '1';
           if (status === 'correct') {
-            cell.style.background = 'linear-gradient(180deg, #0f2e14 0%, #0a1e0d 100%)';
-            cell.style.borderColor = '#4CAF50';
-            cell.style.color = '#C8F7C5';
+            cell.style.background = 'linear-gradient(180deg, #6b717a 0%, #4a4f57 100%)';
+            cell.style.borderColor = '#c7ccd3';
+            cell.style.color = '#f2f3f5';
           } else {
             cell.style.background = 'linear-gradient(180deg, #3a0c0c 0%, #1f0a0a 100%)';
             cell.style.borderColor = '#FF4D4F';
