@@ -806,7 +806,17 @@ button:disabled {
 .admin-info-content .kv span {
     color: #FFD700;
     font-weight: 700;
-    font-size: 20px;
+    font-size: 28px;
+}
+
+.admin-info-content .kv .letter-span {
+    font-size: 40px;
+}
+
+.admin-info-content .kv .question-span {
+    color: #fff;
+    font-weight: 600;
+    font-size: 22px;
 }
 
 .admin-info-placeholder {
@@ -816,6 +826,54 @@ button:disabled {
     font-style: italic;
     background: rgba(0,0,0,0.2);
     border-radius: 8px;
+}
+
+.admin-team-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.admin-team-selector .selector-label {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.team-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.team-buttons .btn-team {
+    padding: 14px 16px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: transform 0.1s ease, border-color 0.1s ease, background 0.1s ease;
+    min-width: 120px;
+}
+
+.team-buttons .btn-team:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #FFD700;
+}
+
+.team-buttons .btn-team.active {
+    background: #FFD700;
+    color: #0c0e1a;
+    border-color: #FFD700;
+    transform: translateY(-1px);
+}
+
+.team-buttons .btn-team:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Responsive para la pestaña de juego */

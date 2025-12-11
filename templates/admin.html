@@ -55,6 +55,12 @@
                         Jugador con turno: <span id="current-buzzer">-</span>
                     </div>
 
+                    <!-- Selección de equipo con turno -->
+                    <div class="control admin-team-selector">
+                        <div class="selector-label">Seleccionar equipo</div>
+                        <div id="admin-team-buttons" class="team-buttons"></div>
+                    </div>
+
                     <!-- Modo moderador -->
                     <div class="control wrap mb-8">
                         <label for="admin-hide-answers">Ocultar respuestas</label>
@@ -85,7 +91,8 @@
                 <div class="card card-correct-answer">
                     <h3>Respuesta correcta (solo moderador)</h3>
                     <div class="admin-info-content hidden" id="admin-correct-box">
-                        <div class="kv">Letra: <span id="admin-correct-letter">-</span></div>
+                        <div class="kv">Pregunta: <span id="admin-question-full" class="question-span">-</span></div>
+                        <div class="kv">Letra: <span id="admin-correct-letter" class="letter-span">-</span></div>
                         <div class="kv">Contenido: <span id="admin-correct-text">-</span></div>
                     </div>
                     <div class="admin-info-placeholder" id="admin-correct-placeholder">

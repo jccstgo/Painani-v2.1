@@ -14,6 +14,7 @@
     playerCount: null,
     hasQuestion: false,
     currentBuzzer: null,
+    triedPlayers: new Set(),
     board: null,
     currentQuestionKey: null,
     hideAnswers: false,
@@ -43,11 +44,13 @@
     els.correctBox = $('admin-correct-box');
     els.correctLetter = $('admin-correct-letter');
     els.correctText = $('admin-correct-text');
+    els.questionFull = $('admin-question-full');
     els.hideToggle = $('admin-hide-answers');
     els.hideStatus = $('hide-answers-status');
     els.scoresRoot = $('admin-scores');
     els.resetBtn = $('btn-reset-exercise');
     els.resetStatus = $('reset-status');
+    els.teamButtons = $('admin-team-buttons');
   }
 
   // -----------------------------
@@ -98,8 +101,10 @@
       const gs = data?.game_state || {};
       if (typeof gs.player_count === 'number') state.playerCount = gs.player_count;
       if (Array.isArray(gs.scores)) state.scores = gs.scores.slice();
+      if (Array.isArray(gs.tried_players)) state.triedPlayers = new Set(gs.tried_players);
       renderTeamCountSelect(state.playerCount || (state.scores.length || 5));
       updateStatus();
+      renderTeamButtons();
     });
 
     socket.on('team_count_updated', (data) => {
@@ -107,19 +112,24 @@
       const pc = typeof data?.player_count === 'number' ? data.player_count : scores.length;
       if (pc) state.playerCount = pc;
       state.currentBuzzer = (typeof data?.current_buzzer === 'number') ? data.current_buzzer : null;
+      if (Array.isArray(data?.tried_players)) state.triedPlayers = new Set(data.tried_players);
       state.hasQuestion = !!data?.has_question; // por si llega, aunque no siempre viene
       renderTeamCountSelect(state.playerCount);
       renderScores(scores);
       updateStatus();
+      renderTeamButtons();
     });
 
     socket.on('question_opened', (q) => {
       state.hasQuestion = true;
+      state.currentBuzzer = null;
+      state.triedPlayers = new Set();
       if (q && typeof q.cat_idx === 'number' && typeof q.clue_idx === 'number') {
         state.currentQuestionKey = `${q.cat_idx}-${q.clue_idx}`;
         highlightCurrentQuestion();
       }
       updateStatus();
+      renderTeamButtons();
     });
 
     socket.on('question_opened_admin', (q) => {
@@ -133,13 +143,20 @@
         state.currentQuestionKey = null;
         fetchBoard();
       }
+      if (r && r.rebote && typeof r.player === 'number') {
+        state.triedPlayers.add(r.player);
+        state.currentBuzzer = null;
+        renderTeamButtons();
+      }
     });
 
     socket.on('close_question', () => {
       state.hasQuestion = false;
       state.currentBuzzer = null;
+      state.triedPlayers = new Set();
       updateStatus();
       renderCorrectInfo(null);
+      renderTeamButtons();
     });
 
     socket.on('buzzer_activated', (d) => {
@@ -175,7 +192,9 @@
       }
       state.hasQuestion = false;
       state.currentBuzzer = null;
+      state.triedPlayers = new Set();
       updateStatus();
+      renderTeamButtons();
       setLoadStatus('Datos cargados (nueva ronda).', 'ok');
       fetchBoard();
       renderCorrectInfo(null);
@@ -207,10 +226,12 @@
         state.hasQuestion = !!gs.has_question;
         state.currentBuzzer = (typeof gs.current_buzzer === 'number') ? gs.current_buzzer : null;
         state.hideAnswers = !!gs.hide_answers;
+        if (Array.isArray(gs.tried_players)) state.triedPlayers = new Set(gs.tried_players);
         state.scores = Array.isArray(gs.scores) ? gs.scores.slice() : [];
 
         renderTeamCountSelect(state.playerCount);
         updateStatus();
+        renderTeamButtons();
         fetchBoard();
 
         if (els.hideToggle) els.hideToggle.checked = !!state.hideAnswers;
@@ -223,6 +244,15 @@
     // Atajos: a/b/c/d para responder, Esc para cancelar
     document.addEventListener('keydown', (e) => {
       if (!state.hasQuestion) return;
+      if (e.key >= '1' && e.key <= '9') {
+        const idx = parseInt(e.key, 10) - 1;
+        setTeamTurn(idx);
+        return;
+      }
+      if (e.key === '0') {
+        setTeamTurn(9);
+        return;
+      }
       const key = e.key.toLowerCase();
       if ('abcd'.includes(key)) {
         const idx = 'abcd'.indexOf(key);
@@ -380,9 +410,15 @@
 
         if (disabled) {
           cell.disabled = true;
-          cell.style.opacity = '0.5';
+          cell.style.opacity = '1';
           if (status === 'correct') {
-            cell.style.borderColor = 'rgba(76,175,80,0.7)';
+            cell.style.background = 'linear-gradient(180deg, #0f2e14 0%, #0a1e0d 100%)';
+            cell.style.borderColor = '#4CAF50';
+            cell.style.color = '#C8F7C5';
+          } else {
+            cell.style.background = 'linear-gradient(180deg, #3a0c0c 0%, #1f0a0a 100%)';
+            cell.style.borderColor = '#FF4D4F';
+            cell.style.color = '#FFD7D7';
           }
         } else {
           cell.addEventListener('click', () => openQuestionAdmin(catIdx, row));
@@ -601,6 +637,7 @@
     if (els.currentBuzzer) {
       els.currentBuzzer.textContent = (state.currentBuzzer == null) ? '-' : `Equipo ${state.currentBuzzer + 1}`;
     }
+    renderTeamButtons();
     // Habilitar/deshabilitar controles de pregunta
     const enabled = !!state.hasQuestion;
     [els.btnCorrect, els.btnIncorrect, els.btnCancel].forEach(b => { if (b) b.disabled = !enabled; });
@@ -612,11 +649,15 @@
     const placeholder = document.getElementById('admin-correct-placeholder');
     let letter = '-';
     let text = '-';
+    let question = '-';
     if (q) {
       const ans = typeof q.answer === 'number' ? q.answer : parseInt(q.answer, 10);
       const choices = Array.isArray(q.choices) ? q.choices : [];
       if (!Number.isNaN(ans) && ans >= 0 && ans < 26) {
         letter = String.fromCharCode(97 + ans);
+      }
+      if (typeof q.question === 'string' && q.question.trim() !== '') {
+        question = q.question.trim();
       }
       // Preferir texto directo si existe para preguntas abiertas
       if (q.answer_text && String(q.answer_text).trim() !== '') {
@@ -629,6 +670,9 @@
     }
     els.correctLetter.textContent = letter;
     els.correctText.textContent = text || '-';
+    if (els.questionFull) {
+      els.questionFull.textContent = question || '-';
+    }
     if (text && text !== '-') {
       els.correctBox.classList.remove('hidden');
       if (placeholder) placeholder.classList.add('hidden');
@@ -636,6 +680,43 @@
       els.correctBox.classList.add('hidden');
       if (placeholder) placeholder.classList.remove('hidden');
     }
+  }
+
+  function renderTeamButtons(count) {
+    if (!els.teamButtons) return;
+    const total = count || state.playerCount || 0;
+    els.teamButtons.innerHTML = '';
+    for (let i = 0; i < total; i += 1) {
+      const btn = document.createElement('button');
+      btn.className = 'btn-team';
+      btn.textContent = `Equipo ${i + 1}`;
+      if (!state.hasQuestion) {
+        btn.disabled = true;
+      } else if (state.currentBuzzer === null) {
+        btn.disabled = state.triedPlayers.has(i);
+      } else {
+        btn.disabled = state.currentBuzzer !== i;
+      }
+      if (state.currentBuzzer === i) {
+        btn.classList.add('active');
+      }
+      btn.addEventListener('click', () => setTeamTurn(i));
+      els.teamButtons.appendChild(btn);
+    }
+  }
+
+  function setTeamTurn(idx) {
+    if (!state.hasQuestion) return setActionStatus('No hay pregunta activa.', 'warn');
+    if (typeof idx !== 'number' || idx < 0 || idx >= (state.playerCount || 0)) return;
+    if (state.triedPlayers.has(idx)) return setActionStatus('Ese equipo ya intentó.', 'warn');
+    if (state.currentBuzzer !== null && state.currentBuzzer !== idx) {
+      return setActionStatus('Ya hay un equipo con el turno.', 'warn');
+    }
+    const s = getSocket();
+    s.emit('buzzer_press', { player: idx });
+    state.currentBuzzer = idx;
+    updateStatus();
+    setActionStatus(`Equipo ${idx + 1} seleccionado para responder.`, 'info');
   }
 
   function renderHideAnswersStatus(hide) {

@@ -1,4 +1,4 @@
-﻿// ===========================
+// ===========================
 // PAINANI WEB - CLIENTE
 // ===========================
 
@@ -11,6 +11,7 @@ const gameState = {
     answerPending: false,
     triedPlayers: new Set(),
     timerInterval: null,
+    timerExpired: false,
     contextMenuPlayer: null,
     playerCount: 5,
     scores: []
@@ -404,6 +405,7 @@ socket.on('question_opened', (data) => {
     gameState.currentQuestion = data;
     gameState.selectedAnswer = -1;
     gameState.answerPending = false;
+    gameState.timerExpired = false;
     gameState.triedPlayers = new Set();
     clearChoiceSelection();
     
@@ -447,7 +449,7 @@ socket.on('stop_timer', () => {
 socket.on('time_up', (data) => {
     console.log('?? Tiempo agotado (esperando decisión del moderador)');
     stopTimer();
-    enableChoices(false);
+    gameState.timerExpired = true;
     setStatus('Tiempo agotado. Esperando decisión del moderador.', 'info');
     playSound('timeup');
 });
@@ -860,6 +862,7 @@ function closeQuestionPanel() {
     gameState.currentQuestion = null;
     gameState.selectedAnswer = -1;
     gameState.answerPending = false;
+    gameState.timerExpired = false;
 
     clearChoiceSelection();
 
@@ -893,6 +896,11 @@ function selectChoice(index) {
     
     // Mostrar en status
     setStatus(`Opción ${String.fromCharCode(97 + index)} seleccionada. Se enviará automáticamente si el tiempo se agota.`, 'info');
+    // Si el tiempo ya expiro, enviar en cuanto se seleccione
+    if (gameState.timerExpired && !gameState.answerPending) {
+        console.log('Tiempo expirado: enviando respuesta seleccionada inmediatamente');
+        submitAnswer();
+    }
 }
 
 function enableChoices(enable) {
@@ -1016,6 +1024,8 @@ function cancelQuestion() {
 function startTimer(seconds) {
     stopTimer(); // Detener temporizador previo
 
+    gameState.timerExpired = false;
+
     let remaining = seconds;
     elements.timer.textContent = remaining;
     elements.timer.style.color = '#FF3333';
@@ -1048,6 +1058,7 @@ function startTimer(seconds) {
         
         if (remaining <= 0) {
             stopTimer();
+            gameState.timerExpired = true;
 
             if (!gameState.answerPending) {
                 if (gameState.currentBuzzer !== null && gameState.selectedAnswer >= 0) {
@@ -1782,3 +1793,4 @@ window.addEventListener('beforeunload', (e) => {
         e.returnValue = '';
     }
 });
+
