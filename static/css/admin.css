@@ -68,14 +68,16 @@ body {
   .board-cell.header { font-size: 11px !important; padding: 6px; }
   .board-cell.clue { font-size: 14px !important; }
 
-  /* Botonera de control: 3 columnas compactas y táctiles */
+  /* Botonera de control: 4 columnas compactas y táctiles */
   .card-question-control .control.wrap { width: 100%; }
   .card-question-control .control.wrap .btn-success,
   .card-question-control .control.wrap .btn-danger,
+  .card-question-control .control.wrap .btn-warning,
   .card-question-control .control.wrap .btn-secondary { min-width: 0; width: 100%; }
-  .card-question-control .control.wrap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .card-question-control .control.wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .card-question-control .btn-success,
   .card-question-control .btn-danger,
+  .card-question-control .btn-warning,
   .card-question-control .btn-secondary { font-size: 12px !important; padding: 8px 6px !important; }
 
   /* Respuestas A/B/C/D: disposición 2x2 y tamaño táctil */
@@ -539,9 +541,21 @@ button:disabled {
     box-shadow: 0 0 15px rgba(117,117,117,0.5);
 }
 
+.btn-warning {
+    background: linear-gradient(135deg, #FF9800 0%, #FFB74D 100%);
+    color: white;
+    border-color: rgba(255,152,0,0.6);
+}
+
+.btn-warning:hover:not(:disabled) {
+    border-color: #FF9800;
+    box-shadow: 0 0 15px rgba(255,152,0,0.6);
+}
+
 /* Control buttons in admin panel - larger for better visibility */
 .card-question-control .btn-success,
 .card-question-control .btn-danger,
+.card-question-control .btn-warning,
 .card-question-control .btn-secondary {
     font-size: 17px !important;
     font-weight: 600 !important;
@@ -1523,6 +1537,7 @@ button:disabled {
     /* Botones de control ultra compactos */
     .card-question-control .btn-success,
     .card-question-control .btn-danger,
+    .card-question-control .btn-warning,
     .card-question-control .btn-secondary {
         font-size: 8px !important;
         padding: 4px 8px !important;
@@ -1803,6 +1818,7 @@ button:disabled {
 
     .card-question-control .btn-success,
     .card-question-control .btn-danger,
+    .card-question-control .btn-warning,
     .card-question-control .btn-secondary {
         font-size: 11px !important;
         padding: 6px 10px !important;

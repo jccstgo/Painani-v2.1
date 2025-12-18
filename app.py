@@ -350,6 +350,23 @@ def handle_moderator_incorrect(data):
         if result.get('close_question'):
             emit('close_question', {}, broadcast=True)
 
+@socketio.on('lose_turn')
+def handle_lose_turn(data):
+    """Quita el turno a un jugador (penalizaci¢n fija y bloquea su participaci¢n en la pregunta)"""
+    player_idx = data.get('player')
+    penalty = data.get('penalty', 100)
+
+    result = game.lose_turn(player_idx, penalty)
+
+    if 'error' in result:
+        emit('error', result, broadcast=False)
+    else:
+        emit('turn_lost', result, broadcast=True)
+        emit('stop_timer', {}, broadcast=True)
+        emit('scores_update', {'scores': game.player_scores}, broadcast=True)
+        if result.get('close_question'):
+            emit('close_question', {}, broadcast=True)
+
 @socketio.on('cancel_question')
 def handle_cancel():
     """Cancela la pregunta actual"""

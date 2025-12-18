@@ -304,6 +304,57 @@ class GameState:
                 "close_question": True,
                 "rebote": False
             }
+
+    def lose_turn(self, player_idx: int, penalty: int = 100) -> Dict:
+        """Quita el turno a un jugador (p. ej. por adelantarse) y aplica penalizaci¢n fija."""
+        if self.current_question is None:
+            return {"error": "No hay pregunta activa"}
+
+        if not isinstance(player_idx, int) or not (0 <= player_idx < self.player_count):
+            return {"error": "Indice de jugador inv lido"}
+
+        try:
+            penalty = int(penalty)
+        except (TypeError, ValueError):
+            penalty = 100
+
+        if penalty < 0:
+            penalty = abs(penalty)
+
+        self.player_scores[player_idx] -= penalty
+        self.tried_players.add(player_idx)
+        if self.current_buzzer == player_idx:
+            self.current_buzzer = None
+        self.timer_active = False
+
+        remaining = [i for i in range(self.player_count) if i not in self.tried_players]
+
+        result: Dict[str, Any] = {
+            "result": "turn_lost",
+            "player": player_idx,
+            "penalty": penalty,
+            "new_score": self.player_scores[player_idx],
+            "close_question": False,
+            "rebote": bool(remaining),
+            "remaining_players": remaining,
+            "tried_players": list(self.tried_players),
+            "current_buzzer": self.current_buzzer
+        }
+
+        if not remaining:
+            # Nadie m s puede responder; cerrar la pregunta como usada
+            if self.current_question:
+                cat_idx = self.current_question["cat_idx"]
+                clue_idx = self.current_question["clue_idx"]
+                self.used_questions.add((cat_idx, clue_idx))
+                self.tile_status[(cat_idx, clue_idx)] = 'used'
+            self.current_question = None
+            self.tried_players.clear()
+            result["close_question"] = True
+            result["rebote"] = False
+            result["tried_players"] = []
+
+        return result
     
     def cancel_question(self) -> Dict:
         """Cancela la pregunta actual sin afectar puntajes"""

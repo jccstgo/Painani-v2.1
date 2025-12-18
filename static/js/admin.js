@@ -39,6 +39,7 @@
     els.board = $('admin-board');
     els.btnCorrect = $('btn-correct');
     els.btnIncorrect = $('btn-incorrect');
+    els.btnLoseTurn = $('btn-lose-turn');
     els.btnCancel = $('btn-cancel');
     els.actionStatus = $('admin-action-status');
     els.correctBox = $('admin-correct-box');
@@ -148,6 +149,31 @@
         state.currentBuzzer = null;
         renderTeamButtons();
       }
+    });
+
+    socket.on('turn_lost', (d) => {
+      const playerIdx = (typeof d?.player === 'number') ? d.player : null;
+      const penalty = (typeof d?.penalty === 'number') ? d.penalty : 100;
+      if (Array.isArray(d?.tried_players)) {
+        state.triedPlayers = new Set(d.tried_players);
+      } else if (playerIdx !== null) {
+        state.triedPlayers.add(playerIdx);
+      }
+      state.currentBuzzer = null;
+
+      if (d?.close_question) {
+        state.hasQuestion = false;
+        state.currentQuestionKey = null;
+        fetchBoard();
+        renderCorrectInfo(null);
+      }
+
+      renderTeamButtons();
+      updateStatus();
+      const msg = playerIdx !== null
+        ? `Equipo ${playerIdx + 1} pierde el turno (-${penalty}).`
+        : 'Un equipo perdi¢ el turno.';
+      setActionStatus(msg, 'warn');
     });
 
     socket.on('close_question', () => {
@@ -290,6 +316,7 @@
     // Controles de pregunta
     if (els.btnCorrect) els.btnCorrect.addEventListener('click', moderatorCorrectAdmin);
     if (els.btnIncorrect) els.btnIncorrect.addEventListener('click', moderatorIncorrectAdmin);
+    if (els.btnLoseTurn) els.btnLoseTurn.addEventListener('click', loseTurnAdmin);
     if (els.btnCancel) els.btnCancel.addEventListener('click', cancelQuestionAdmin);
     document.querySelectorAll('[data-answer]')?.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -469,6 +496,15 @@
     s.emit('moderator_incorrect', { player: state.currentBuzzer });
   }
 
+  function loseTurnAdmin() {
+    if (!state.hasQuestion) return setActionStatus('No hay pregunta activa.', 'warn');
+    if (state.currentBuzzer == null) return setActionStatus('Ningτ equipo tiene el turno.', 'warn');
+    const s = getSocket();
+    const penalty = 100;
+    s.emit('lose_turn', { player: state.currentBuzzer, penalty });
+    setActionStatus(`Equipo ${state.currentBuzzer + 1} pierde el turno (-${penalty}).`, 'warn');
+  }
+
   function cancelQuestionAdmin() {
     if (!state.hasQuestion) return setActionStatus('No hay pregunta activa.', 'warn');
     const s = getSocket();
@@ -643,7 +679,7 @@
     renderTeamButtons();
     // Habilitar/deshabilitar controles de pregunta
     const enabled = !!state.hasQuestion;
-    [els.btnCorrect, els.btnIncorrect, els.btnCancel].forEach(b => { if (b) b.disabled = !enabled; });
+    [els.btnCorrect, els.btnIncorrect, els.btnLoseTurn, els.btnCancel].forEach(b => { if (b) b.disabled = !enabled; });
     applyAnswerButtonsState();
   }
 

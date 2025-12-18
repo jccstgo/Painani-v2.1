@@ -491,6 +491,36 @@ socket.on('answer_result', (data) => {
     }
 });
 
+
+socket.on('turn_lost', (data) => {
+    console.log('?? Turno retirado:', data);
+    stopTimer();
+    gameState.answerPending = false;
+    gameState.selectedAnswer = -1;
+    clearChoiceSelection();
+
+    const player = (typeof data.player === 'number') ? data.player : null;
+    const penalty = (typeof data.penalty === 'number') ? data.penalty : 100;
+
+    if (Array.isArray(data.tried_players)) {
+        gameState.triedPlayers = new Set(data.tried_players);
+    } else if (player !== null) {
+        gameState.triedPlayers.add(player);
+    }
+
+    gameState.currentBuzzer = null;
+    enableChoices(false);
+    refreshBuzzerState();
+
+    if (data && data.close_question) {
+        setStatus('Turno retirado. Sin equipos restantes.', 'incorrect');
+    } else if (player !== null) {
+        setStatus(`Equipo ${player + 1} pierde el turno (-${penalty}). Otro equipo puede contestar.`, 'info');
+    } else {
+        setStatus('Turno retirado. Otro equipo puede contestar.', 'info');
+    }
+});
+
 socket.on('scores_update', (data) => {
     console.log('💯 Puntajes actualizados');
     updateScores(data.scores);
